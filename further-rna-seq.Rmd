@@ -90,11 +90,46 @@ Common *Similarity* / *Dissimilarity* measures include
     + and others.....
 
     
-```{r}
+## How to compute similarity, in R
 
+The `dist` function can be used to calculate a variety of similarity measures
+
+- As usual, we can do `?dist`. 
+- The input is a matrix of numerical values
+- Let's test with some sample data
+
+
+```{r}
+myMatrix <- matrix(rnorm(1000),ncol=10)
+colnames(myMatrix) <- LETTERS[1:10]
+head(myMatrix)
 ```
 
-    
+- The default is to compute distances from the *rows* of the matrix
+    + i.e. which would normally be the genes we are measuring
+- Also note that the matrix has some values that appear to be missing
+    + why do you think that might be?
+
+```{r}
+d <- dist(myMatrix)
+d
+```
+
+- The more common use of clustering is to cluster the columns (*samples*)
+- To do this, we have to *transpose* the matrix; using the function `t`
+
+```{r}
+d <- dist(t(myMatrix))
+d
+```
+
+- Changing the type of distance measure can be done by changing the `method` argument
+
+```{r}
+d.man <- dist(t(myMatrix),method="manhattan")
+d.man
+```
+
     
 ![metrics](images/distance-metric.png)
     
