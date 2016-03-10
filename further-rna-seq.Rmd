@@ -234,9 +234,13 @@ Clustering Algorithms
 - At each step, *merge* the two closest clusters using a measure of *between-cluster* dissimilarity which reflects the shape of the clusters
 - The distance between the clusters is defined by the method used (e.g. in *complete linkage*, the distance is defined as the distance between the furthest pair of points in the two clusters)
 
+## Hierachical methods
+
+![the-algorithm](images/hierarichal-alg.png)
+
 ## Between-cluster dissimilarity measures
 
-![between-clusters](images/between-clusters.png)
+![between-clusters](images/distance-metrics.png)
 
 ## Hierachical Clustering
 
