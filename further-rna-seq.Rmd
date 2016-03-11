@@ -7,7 +7,7 @@ output: slidy_presentation
 
 
 
-# Clustering
+# Clustering (and PCA)
 
 
 ## Clustering.. or Classification?
@@ -340,74 +340,12 @@ plot(si4, col = c("red", "blue"),main="")# with cluster-wise coloring
 - Be aware
     + Clustering will always produce something. It cannot NOT work
     
+## Application of clustering to RNA-seq
 
-```{r message=FALSE,eval=FALSE} 
-library("pasilla")
-library("Biobase")
-data("pasillaGenes")
-countData <- counts(pasillaGenes)
-colData <- pData(pasillaGenes)[,c("condition","type")]
-```
+- Clustering is a generic technique that can be applied to many forms of data
+    + We will use it on RNA-seq, but it can be used on ChIP-seq (see tomorrow), or DNA-seq data
+- Quality assessment of samples
+      + checking for batch effects and outliers
+      + check effectiveness of normalisation / transformation
 
-```{r,eval=FALSE}
-library(DESeq2)
-dds <- DESeqDataSetFromMatrix(countData = countData,
-colData = colData,
-design = ~ condition)
-```
-
-```{r,eval=FALSE}
-featureData <- data.frame(gene=rownames(pasillaGenes))
-(mcols(dds) <- DataFrame(mcols(dds), featureData))
-```
-
-```{r,eval=FALSE}
-dds <- estimateSizeFactors(dds)
-```
-
-
-```{r,eval=FALSE}
-library("pheatmap")
-select <- order(rowMeans(counts(dds,normalized=TRUE)),decreasing=TRUE)[1:20]
-```
-
-```{r,eval=FALSE}
-nt <- normTransform(dds) # defaults to log2(x+1)
-log2.norm.counts <- assay(nt)[select,]
-df <- as.data.frame(colData(dds)[,c("condition","type")])
-```
-
-```{r,eval=FALSE}
-pheatmap(log2.norm.counts, cluster_rows=FALSE, show_rownames=FALSE,
-cluster_cols=FALSE, annotation_col=df)
-```
-
-```{r,eval=FALSE}
-rld <- rlog(dds,blind = TRUE)
-vsd <- varianceStabilizingTransformation(dds)
-head(assay(rld), 3)
-```
-
-```{r,eval=FALSE}
-sampleDists <- dist(t(assay(rld)))
-sampleDists
-```
-
-
-
-```{r,eval=FALSE}
-library("RColorBrewer")
-sampleDistMatrix <- as.matrix(sampleDists)
-rownames(sampleDistMatrix) <- paste(rld$condition, rld$type, sep="-")
-colnames(sampleDistMatrix) <- NULL
-colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
-pheatmap(sampleDistMatrix,
-clustering_distance_rows=sampleDists,
-clustering_distance_cols=sampleDists,
-col=colors)
-```
-
-```{r,eval=FALSE}
-plotPCA(rld, intgroup=c("condition", "type"))
-```
 
