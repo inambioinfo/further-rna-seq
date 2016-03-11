@@ -82,7 +82,7 @@ When clustering genes, it is common to pre-process;
 - filter; remove genes with low variability across samples and many missing values
 - (impute missing values)
 - standardise; e.g. zero-mean and, unit variance:
-    + $y_g^* <- (y_g - \mu_g)/\sigma_g$
+    + $y_g^* = (y_g - \mu_g)/\sigma_g$
     
 ## How to compute similarity
 Common *Similarity* / *Dissimilarity* measures include
@@ -248,11 +248,7 @@ Clustering Algorithms
 - Nodes can be reordered
     + Closer on dendrogram $\ne$ more similar
 
-![hierarchical](images/hierachical.png)
-
-## Useful analogy?
-
-![mobile](images/mobile.jpg)
+![hierarchical](images/cluster-caution.png)
 
 
 
@@ -339,6 +335,8 @@ plot(si4, col = c("red", "blue"),main="")# with cluster-wise coloring
 - Useful as ***exploratory / visualisation*** tools
 - Choice of metric, methods and parameters usually guided by prior knowledge about the question
     + The result is guided by what you are looking for
+- Validate using different algorithms
+- Use prior Biological knowledge, or your sample meta data to see if the clusters make sense
 - Be aware
     + Clustering will always produce something. It cannot NOT work
     
