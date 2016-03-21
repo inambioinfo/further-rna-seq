@@ -348,4 +348,64 @@ plot(si4, col = c("red", "blue"),main="")# with cluster-wise coloring
       + checking for batch effects and outliers
       + check effectiveness of normalisation / transformation
 
+# Principal Components Analysis (PCA)
+
+## Why Use PCA
+
+- In genomic data, we have a large number of variables which are often highly correlated
+
+- PCA is one of many *dimension-reduction* techniques that can remove redundancy and give a smaller more mangeable set of variables. In summary it can help us to:-
+
+- Reduce *dimensionality* of the data
+- Decrease the *redundancy* of the data
+- Filter the *noise* in the data
+- *Compress* the data
+
+
+## Some Examples: Diet habits
+
+- Analysis of 'foursquare' check-ins to reveal food and drink habits
+(You Are What You Eat (and Drink): Identifying Cultural Boundaries by Analyzing Food and Drink Habits in Foursquare. Silva et al (2014))
+![food-pca](images/food-pca.png)
+
+
+## Some Examples: Athlete Performance
+
+Olympic heptathalon results from 1988 - Everitt and Hothorn (2006) A handbook of statistical analyses using R
+
+```{r echo=FALSE}
+#http://rcourse.iop.kcl.ac.uk/2014/5fri/3/updated_kh_pca_slides_030614.pdf
+data(heptathlon, package="HSAUR")
+heptathlon$hurdles <- max(heptathlon$hurdles) - heptathlon$hurdles
+heptathlon$run200m <- max(heptathlon) - heptathlon$run200m
+heptathlon$run800m <- max(heptathlon) - heptathlon$run800m
+pairs(heptathlon[,-which(colnames(heptathlon) == "score")])
+```
+
+## Some Examples: Athlete Performance
+
+
+```{r}
+score <- which(colnames(heptathlon) == "score")
+heptathlon_pca <- prcomp(heptathlon[,-score],scale=TRUE)
+summary(heptathlon_pca)
+plot(heptathlon_pca)
+```
+
+## How many components?
+
+![scree](https://upload.wikimedia.org/wikipedia/commons/e/e0/Yamnuska_bottom_cliff.jpg)
+
+## PCA output
+
+```{r}
+heptathlon_pca
+```
+
+## Whisky 
+
+```{r}
+whiskies <- read.csv("whiskies.txt")
+pca <- prcomp(whiskies[,c(3:14)])
+```
 
