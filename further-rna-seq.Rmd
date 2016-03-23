@@ -362,50 +362,335 @@ plot(si4, col = c("red", "blue"),main="")# with cluster-wise coloring
 - *Compress* the data
 
 
-## Some Examples: Diet habits
+## PCA Example: Whisky
 
-- Analysis of 'foursquare' check-ins to reveal food and drink habits
-(You Are What You Eat (and Drink): Identifying Cultural Boundaries by Analyzing Food and Drink Habits in Foursquare. Silva et al (2014))
-![food-pca](images/food-pca.png)
+The data: 86 malt whiskies scored for 12 different taste categories
 
+(https://www.mathstat.strath.ac.uk/outreach/nessie/nessie_whisky.html)
 
-## Some Examples: Athlete Performance
-
-Olympic heptathalon results from 1988 - Everitt and Hothorn (2006) A handbook of statistical analyses using R
+- Q. Can we find which whiskies have a similar taste profile?
+- Q. What are the factors that determine the taste profile?
 
 ```{r echo=FALSE}
-#http://rcourse.iop.kcl.ac.uk/2014/5fri/3/updated_kh_pca_slides_030614.pdf
-data(heptathlon, package="HSAUR")
-heptathlon$hurdles <- max(heptathlon$hurdles) - heptathlon$hurdles
-heptathlon$run200m <- max(heptathlon) - heptathlon$run200m
-heptathlon$run800m <- max(heptathlon) - heptathlon$run800m
-pairs(heptathlon[,-which(colnames(heptathlon) == "score")])
+whisky <- read.csv("whiskies.txt")
+scores <- whisky[,c(3:14)]
+rownames(scores) <- whisky$Distillery
+head(scores,n=3)
 ```
 
-## Some Examples: Athlete Performance
+## PCA Example
 
+```{r echo=FALSE,fig.align="center",fig.width=12}
+pca <- prcomp(scores)
+df <- data.frame(whisky,pca$x)
+library(ggplot2)
+ggplot(df, aes(x=PC1,y=PC2,label=Distillery)) + geom_point() + geom_text(alpha=0.3)
+
+```
+
+## PCA Example
+
+```{r echo=FALSE,fig.align="center",fig.width=14}
+pca <- prcomp(scores)
+df <- data.frame(whisky,pca$x)
+library(ggplot2)
+ggplot(df, aes(x=PC1,y=PC2,label=Distillery,cex=Smoky,col=as.factor(Floral))) + geom_point() + geom_text(cex=5,alpha=0.3)
+
+```
+
+
+## More-relevant example
+
+- MAQC microarrays with mixtures of Brain and Reference RNA (UHRR) at different concentrations
+- Run in different labs
+    + what do you notice?
+
+```{r echo=FALSE,warning=FALSE}
+suppressPackageStartupMessages(library(MAQCsubsetILM))
+
+
+data(refA);data(refB);data(refC);data(refD)
+gse = combine(refA, refB, refC, refD)
+sites = pData(gse)[,2]
+shortlabels = substr(sampleNames(gse), 7,8)
+rnasource = pData(gse)[,3]
+levels(rnasource) = c("UHRR", "Brain", "UHRR75", "UHRR25")
+
+d <- dist(t(exprs(gse)))
+pc <- princomp(d)
+
+
+Lab <- paste("Lab",sites,sep="")
+df <- data.frame(Lab,rnasource,PC1=pc$loadings[,1],PC2=pc$loadings[,2])
+ggplot(df, aes(x = PC1,y=PC2, col=rnasource,pch=Lab)) + geom_point(cex=5)
+
+```
+
+## More-relevant example
+
+So, PCA can be used as a quality assessment tool and can inform us of any factors we need to account for in the analysis
+
+- In this case we could correct for the batch effect, or add a batch factor to the linear model for analysis
+
+```{r echo=FALSE}
+suppressPackageStartupMessages(library(limma))
+gse.batchcorrect <- removeBatchEffect(log2(exprs(gse)), batch=sites)
+d2 <- dist(t(gse.batchcorrect))
+pc2 <- princomp(d2)
+
+df <- data.frame(Lab,rnasource,PC1=pc2$loadings[,1],PC2=pc2$loadings[,2])
+ggplot(df, aes(x = PC1,y=PC2, col=rnasource,pch=Lab)) + geom_point(cex=5)
+
+```
+
+## What is going-on here?
+
+A two-dimensional case
+
+- Find direction of most variation (PC1)
+- Direction that explains next amount of variation is orthogonal (at 90 degrees) (PC2)
+- Each point on original x and y is a linear combination of PC1 and PC2
+- Higher dimensional data can have many more components PC3, PC4....
+    + although they will become increasingly less-influential
+
+![pca-explained](images/pca-explained.png)
+
+## Worked example
+
+Getting the data...
 
 ```{r}
-score <- which(colnames(heptathlon) == "score")
-heptathlon_pca <- prcomp(heptathlon[,-score],scale=TRUE)
-summary(heptathlon_pca)
-plot(heptathlon_pca)
+whisky <- read.csv("https://www.mathstat.strath.ac.uk/outreach/nessie/datasets/whiskies.txt")
+scores <- whisky[,c(3:14)]
+rownames(scores) <- whisky$Distillery
+head(scores,n=3)
+```
+
+## Running the PCA
+
+The `prcomp` function does the hard-work for us
+
+- It is computing *eigenvectors* and *eigenvalues* from our input matrix
+    + or rather the covariance matrix
+- We have 12 components (as we had 12 variables)
+- The components are ordered according to the amount of variance they *explain*
+
+```{r}
+pca <- prcomp(scores)
+summary(pca)
+```
+
+## Dissecting the PCA results
+
+- Each column in a principal component
+    + in decreasing order of importance
+- The values are the measure of importance for each component
+    + e.g. Smoky seems to be important for PC1
+    + Smoky and Floral are opposite ends of the spectrum for PC1
+    
+```{r}
+pca$rotation[,1:5]
 ```
 
 ## How many components?
 
-![scree](https://upload.wikimedia.org/wikipedia/commons/e/e0/Yamnuska_bottom_cliff.jpg)
+We look at the variance explained by each component and judge where it "drops-off"
 
-## PCA output
-
+- Sometimes called a "scree-plot"
 ```{r}
-heptathlon_pca
+plot(pca)
 ```
 
-## Whisky 
+## How many components?
+
+![scree](images/scree.jpg)
+
+
+## Dissecting the PCA results
+
+The new co-ordinate system is given by `pca$x`
+
+- One row for each of our whiskies, one column for each component
+- The original coordinates are a linear combination of the new ones
+    + an exercise for the reader?
 
 ```{r}
-whiskies <- read.csv("whiskies.txt")
-pca <- prcomp(whiskies[,c(3:14)])
+pca$x[1:3,1:5]
 ```
+
+## Dissecting the PCA results
+
+`ggplot2` is especially convenient for visualising the results
+
+- An overlay of the known variables will highlight the patterns
+- As with clustering, PCA is to be used as an exploratory tool
+
+```{r}
+df <- data.frame(whisky,pca$x)
+ggplot(df, aes(x=PC1,y=PC2,label=Distillery,cex=Smoky,col=as.factor(Floral))) + geom_point() + geom_text(cex=5,alpha=0.3)
+```
+
+# Enrichment Analysis
+
+
+## Theory Part I: Over-representation analysis
+
+- "Threshold-based": require defintion of a statistical threshold to define list of genes to test (e.g. FDR < 0.01)
+- Hypergeometric test, Fisher's Exact test is used.
+
+The question we are asking here is;
+
+> ***"Are the number of DE genes associated with Theme X significantly greater than what we might expect by chance alone?"***
+
+Where Theme X could be genes belonging to a particular GO (Gene Onotology) term.
+
+
+## Toy example 
+
+Let's imagine that we have a bag full of balls. Each balls represents a gene in the *gene universe*. 
+- Paint the balls representing our selected list grey, and paint the rest red.
+
+
+![bag-and balls](images/bag-and-balls.png)
+
+In this small example, we can define;
+
+- Total number of balls: 40
+- Total number of interesting (grey) balls: 10
+
+## Toy example
+
+Select a number (say, 12) of the balls at random without seeing into the bag and look at what we get
+
+![picked-balls](images/picked-balls.png)
+
+## Toy example
+
+We have picked, at random, 8 grey balls. 
+
+- We can repeat the process and look at how many grey we get. 
+- We can (of course!) do this in R. 
+    + In base R there is a family of functions that can generate random draws from various distributions; `rnorm`, `rbinom`, `rhyper` etc....
+
+```{r fig.height=3}
+#see ?rhyper for argument definition
+trials <- rhyper(10000,40,10,12)
+hist(trials)
+
+```
+
+## Toy example
+
+```{r}
+table(trials)
+table(trials)/10000
+cumsum(table(trials)/10000)
+1-cumsum(table(trials)/10000)
+```
+
+
+## Toy example
+
+Back to our example, the distribution of balls can be expressed as a contingency table, on which we can use a Fisher's exact test
+
+Total grey balls: 10
+Total in subset: 12
+
+```{r results='asis',echo=FALSE}
+library(knitr)
+df <- data.frame(Selection_in = c(8,4), Selection_out = c(2,26))
+rownames(df) <- c("Grey_in", "Grey_out")
+kable(df)
+```
+
+## Toy example
+
+```{r results='asis',echo=FALSE}
+df <- data.frame(Selection_in = c("a","c","a+c"), Selection_out = c("b","d","b+d"), RowTotal = c("a +b","c+d","a+b+c+d (=n)"))
+rownames(df) <- c("Grey_in", "Grey_out","Column Total")
+kable(df)
+```
+
+The formula for Fishers exact test is;
+
+$$ p = \frac{\binom{a + b}{a}\binom{c +d}{c}}{\binom{n}{a +c}} = \frac{(a+b)!(c+d)!(a+c)!(b+d)!}{a!b!c!d!n!} $$
+
+or less formally;
+
+*P = (ways of choosing grey balls) X (ways of non-grey balls amongst subset) / ways of choosing subset*
+
+## Implementation in R
+
+- We don't need to remember this formula as R will calculate the probability for us
+- We will use `goseq` in the practical
+    + The package will also deal with the mapping of genes to GO cateogories
+    + It has corrections for gene-length too
+    
+- Other options;
+  + GOstats (not specifically for NGS?)
+  + topGO (see [here](http://www-huber.embl.de/users/klaus/Teaching/DESeq2Predoc2014.html#gene-ontology-enrichment-analysis) for a nice worked-example)
+  + various others in [BioC](http://bioconductor.org/packages/release/BiocViews.html#___GeneSetEnrichment)
+  + online tools; DAVID, Genetrail
+  
+## Theory Part II: Threshold-free
+
+For these tests, we don't have to specify a statistical threshold and use the test statistics from *all* genes as the input to the test. The popular *Gene Set Enrichment Analysis (GSEA)* uses this approach. These tests can be used to detect differential expression for a group of genes, even when the effects are too small or there is too little data to detect the genes individually.
+
+![gsea](images/GSEA.png)
+
+*Subramanian et al, PNAS 2005*
+
+## Theory Part II: Threshold-free
+
+
+- The Broad institute provides [a version of GSEA](http://software.broadinstitute.org/gsea/index.jsp) that can be run via a java application. 
+- However, it requires you to convert your data into a particular format. A more convenient option is [***GeneTrail***](http://genetrail.bioinf.uni-sb.de/enrichment_analysis.php?js=1&cc=1) which has the option to do a GSEA-style analysis.
+
+The required input text contains a set of gene identifiers that are ordered according to some test statistic. To produce such a file, we first have to order the statistics from our test (e.g. with the `order` function)
+
+```{r eval=FALSE}
+load("Day3/edgeRAnalysis_ALLGENES.RData")
+y <- y[order(y$LR,decreasing = TRUE),]
+write.table(y, file="genetrail-gsea.txt",sep="\t",row.names = FALSE,quote=FALSE)
+```
+
+
+## A Threshold-free test in Bioconductor
+
+- Simple version of this test is implemented in the `geneSetTest` function in `limma`,
+- Computes a p-value to test the hypothesis that the selected genes have more extreme
+test-statistics than one might expect by chance. 
+
+e.g. pick 50 genes at random. 
+
+```{r fig.height=3}
+library(limma)
+load("Day3/edgeRAnalysis_ALLGENES.RData")
+stats <- y$logFC
+myGenes <- sample(1:nrow(y),50)
+geneSetTest(index = myGenes, statistics = stats)
+barcodeplot(stats, index=myGenes)
+```
+
+
+## A Threshold-free test in Bioconductor
+
+On the other hand, we could deliberately pick genes with a significant p-value and notice how the results are altered.
+
+```{r fig.height=3}
+
+myGenes <- which(y$FDR < 0.01)[1:50]
+
+geneSetTest (index = myGenes , statistics = stats)
+
+geneSetTest (index = myGenes , statistics = stats ,
+  alternative = "down" )
+
+geneSetTest (index = myGenes , statistics = stats ,
+  alternative = "up" )
+
+barcodeplot (statistics = stats , index = myGenes )
+
+```
+
 
